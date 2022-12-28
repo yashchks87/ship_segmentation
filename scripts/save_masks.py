@@ -34,12 +34,15 @@ def masks_as_image(in_mask_list):
             all_masks += rle_decode(mask)
     return np.expand_dims(all_masks, -1)
 
-def save_masks(csv_file, path_begin = '../../masks/'):
+def save_masks(csv_file, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin = '../../masks/'):
     """
         It takes csv file as input and generate masks and save them to given path.
         Args:
         csv_file: Actual csv file(NOT A PATH),
+        col_1: Column name for fetching image names; default value as ImageId,
+        col_2: Pixel col name; default value is EncodedPixels,
         path_begin: It will store masks at this path.
+        * Make sure column names are ImageId and EncodePixels.
     """
     image_ids, pixels = csv_file['ImageId'].values.tolist(), csv_file['EncodedPixels'].values.tolist()
     if os.path.exists(path_begin) == False:
