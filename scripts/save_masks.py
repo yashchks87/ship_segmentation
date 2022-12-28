@@ -8,7 +8,8 @@ import PIL
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-
+import argparse
+from  PIL import Image
 
 def rle_decode(mask_rle, shape=(768, 768)):
     '''
@@ -34,7 +35,7 @@ def masks_as_image(in_mask_list):
             all_masks += rle_decode(mask)
     return np.expand_dims(all_masks, -1)
 
-def save_masks(csv_file, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin = '../../masks/'):
+def save_masks(csv_file_path, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin = '../../masks/'):
     """
         It takes csv file as input and generate masks and save them to given path.
         Args:
@@ -44,19 +45,36 @@ def save_masks(csv_file, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin 
         path_begin: It will store masks at this path.
         * Make sure column names are ImageId and EncodePixels.
     """
+    csv_file = pd.read_csv(csv_file_path)
+    csv_file = csv_file.groupby('ImageId')['EncodedPixels'].apply(list).reset_index()
     image_ids, pixels = csv_file['ImageId'].values.tolist(), csv_file['EncodedPixels'].values.tolist()
     if os.path.exists(path_begin) == False:
         os.makedirs(path_begin)
     for x in tqdm(range(len(image_ids))):
         file_name = path_begin + image_ids[x].split('.')[0]
         if type(pixels[x][0]) != str:
-            PIL.Image.fromarray(np.array(np.zeros(shape=(768, 768)).astype(np.uint8))).save(f'{file_name}.png')
+            Image.fromarray(np.array(np.zeros(shape=(768, 768)).astype(np.uint8))).save(f'{file_name}.png')
         else:
             img_0 = masks_as_image(pixels[x])
-            img = PIL.Image.fromarray((img_0 * 255).reshape(768, 768).astype(np.uint8))
+            img = Image.fromarray((img_0 * 255).reshape(768, 768).astype(np.uint8))
             img.save(f'{file_name}.png')
 
 if __name__ == '__main__':
-    save_masks()
-    rle_decode()
-    masks_as_image()
+    parser = argparse.ArgumentParser(
+                    prog = 'Save masks script.',
+                    description = 'Script to save masks for ground truth labels.')
+    parser.add_argument(
+        '-c', '--csv_file_path', required = True
+    )
+    parser.add_argument(
+        '-c1', '--col_1', required = False, default = 'ImageId'
+    )
+    parser.add_argument(
+        '-c2', '--col_2', required = False, default = 'EncodedPixels'
+    )
+    parser.add_argument(
+        '-p', '--path_begin', required = True
+    )
+    args = parser.parse_args()
+    # print(args.csv_file)
+    save_masks(args.csv_file_path, args.col_1, args.col_2, args.path_begin)
