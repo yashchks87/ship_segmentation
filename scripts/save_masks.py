@@ -1,3 +1,8 @@
+"""
+Author: Yash Choksi
+Date: 12/28/2022
+"""
+
 import os
 import PIL
 import pandas as pd
@@ -30,6 +35,12 @@ def masks_as_image(in_mask_list):
     return np.expand_dims(all_masks, -1)
 
 def save_masks(csv_file, path_begin = '../../masks/'):
+    """
+        It takes csv file as input and generate masks and save them to given path.
+        Args:
+        csv_file: Actual csv file(NOT A PATH),
+        path_begin: It will store masks at this path.
+    """
     image_ids, pixels = csv_file['ImageId'].values.tolist(), csv_file['EncodedPixels'].values.tolist()
     if os.path.exists(path_begin) == False:
         os.makedirs(path_begin)
