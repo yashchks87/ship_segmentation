@@ -1,0 +1,6 @@
+{"model_name" : "ResNet50", 
+ "epochs" : 100, 
+ "batch_size": 128, 
+ "input_file_location": "./data.pickle",
+ "l_w_folder": "res50_baseline"
+}
