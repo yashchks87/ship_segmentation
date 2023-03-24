@@ -41,8 +41,8 @@ with open(params_path) as f:
 
 dict_params = dict(json.loads(data))
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(gpus[0], True)
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# tf.config.experimental.set_memory_growth(gpus[0], True)
 
 strategy = tf.distribute.get_strategy()
 AUTO = tf.data.experimental.AUTOTUNE
