@@ -41,12 +41,15 @@ with open(params_path) as f:
 
 dict_params = dict(json.loads(data))
 
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# tf.config.experimental.set_memory_growth(gpus[0], True)
+allowed_gpus = dict_params['allowed_gpus']
+gpus = tf.config.list_physical_devices("GPU")
+final_gpu_list = [gpus[x] for x in allowed_gpus]
+tf.config.set_visible_devices(final_gpu_list, "GPU")
 
-strategy = tf.distribute.get_strategy()
+strategy = tf.distribute.MirroredStrategy()
 AUTO = tf.data.experimental.AUTOTUNE
 REPLICAS = strategy.num_replicas_in_sync
+
 
 with open(dict_params['input_file_location'], 'rb') as handle:
     updated_train_csv = pickle.load(handle)
@@ -114,9 +117,9 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir = log_dir)
 weights_path = f'/home/ubuntu/ml-data-training/weights/weights/{dict_params["l_w_folder"]}/'
 weights_save = CallbackForSavingModelWeights(weights_path)
 batch_size = dict_params['batch_size']
-train_dataset = get_data(train, batch_size = batch_size)
-val_dataset = get_data(val, repeat = False, shuffle = False, batch_size=batch_size)
-model = create_model(dict_params['model_name'], (256, 256, 3))
+train_dataset = get_data(train, shape=(32, 32), batch_size = batch_size)
+val_dataset = get_data(val, shape=(32, 32), repeat = False, shuffle = False, batch_size=batch_size)
+model = create_model(dict_params['model_name'], (32, 32, 3))
 model = compile_new_model(model)
 model_hist = model.fit(
     train_dataset,
