@@ -1,6 +1,7 @@
 {"model_name" : "Xception", 
  "epochs" : 200, 
- "batch_size": 64, 
+ "batch_size": 128, 
  "input_file_location": "./data.pickle",
- "l_w_folder": "xcep_baseline"
+ "l_w_folder": "xcep_class_weight",
+ "allowed_gpus": [4, 5, 6, 7]
 }
