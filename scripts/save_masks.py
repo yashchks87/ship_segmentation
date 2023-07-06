@@ -1,15 +1,18 @@
 """
 Author: Yash Choksi
 Date: 12/28/2022
+Updated: 07/05/2023
 """
 
-import os
-import PIL
 import pandas as pd
-import numpy as np
+import pickle
+import PIL
+import os
 from tqdm import tqdm
+from PIL import Image
+import numpy as np
+import multiprocessing as mp
 import argparse
-from  PIL import Image
 
 def rle_decode(mask_rle, shape=(768, 768)):
     '''
@@ -35,29 +38,32 @@ def masks_as_image(in_mask_list):
             all_masks += rle_decode(mask)
     return np.expand_dims(all_masks, -1)
 
-def save_masks(csv_file_path, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin = '../../masks/'):
-    """
-        It takes csv file as input and generate masks and save them to given path.
-        Args:
-        csv_file: Actual csv file(NOT A PATH),
-        col_1: Column name for fetching image names; default value as ImageId,
-        col_2: Pixel col name; default value is EncodedPixels,
-        path_begin: It will store masks at this path.
-        * Make sure column names are ImageId and EncodePixels.
-    """
+def save_masks(data):
+    try:
+        image_ids, pixels, path_begin = data[0], data[1], data[2]
+        file_name = path_begin + image_ids.split('.')[0]
+        if type(pixels[0]) != str:
+            Image.fromarray(np.array(np.zeros(shape=(768, 768)).astype(np.uint8))).save(f'{file_name}.png')
+        else:
+            img = masks_as_image(pixels)
+            img = Image.fromarray((img * 255).reshape(768, 768).astype(np.uint8))
+            img.save(f'{file_name}.png')
+        return 'DONE'
+    except:
+        return data[0]
+
+def save_masks_helper(csv_file_path, col_1 = 'ImageId', col_2 = 'EncodedPixels', path_begin = '../../masks/', pool_size = 15):
     csv_file = pd.read_csv(csv_file_path)
     csv_file = csv_file.groupby('ImageId')['EncodedPixels'].apply(list).reset_index()
     image_ids, pixels = csv_file['ImageId'].values.tolist(), csv_file['EncodedPixels'].values.tolist()
     if os.path.exists(path_begin) == False:
         os.makedirs(path_begin)
-    for x in tqdm(range(len(image_ids))):
-        file_name = path_begin + image_ids[x].split('.')[0]
-        if type(pixels[x][0]) != str:
-            Image.fromarray(np.array(np.zeros(shape=(768, 768)).astype(np.uint8))).save(f'{file_name}.png')
-        else:
-            img_0 = masks_as_image(pixels[x])
-            img = Image.fromarray((img_0 * 255).reshape(768, 768).astype(np.uint8))
-            img.save(f'{file_name}.png')
+    with mp.Pool(pool_size) as p:
+        results = p.map(save_masks, [(image_ids[x], pixels[x], path_begin) for x in range(len(image_ids))])
+    for x in results:
+        if x != 'DONE':
+            print(x)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -67,14 +73,13 @@ if __name__ == '__main__':
         '-c', '--csv_file_path', required = True
     )
     parser.add_argument(
-        '-c1', '--col_1', required = False, default = 'ImageId'
-    )
-    parser.add_argument(
-        '-c2', '--col_2', required = False, default = 'EncodedPixels'
-    )
-    parser.add_argument(
         '-p', '--path_begin', required = True
     )
+    parser.add_argument(
+        '-ps', '--pool_size', required = True
+    )
     args = parser.parse_args()
-    # print(args.csv_file)
-    save_masks(args.csv_file_path, args.col_1, args.col_2, args.path_begin)
+    save_masks_helper(csv_file_path=args.csv_file_path, path_begin=args.path_begin, pool_size=int(args.pool_size))
+
+
+# python save_masks.py -c ../../files/train_ship_segmentations_v2.csv -p ../../files/masks_v1/train/ -ps 25
